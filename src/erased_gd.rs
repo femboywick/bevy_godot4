@@ -11,14 +11,14 @@ pub struct ErasedGd {
 }
 
 impl ErasedGd {
-    pub fn get<T: Inherits<Node>>(&mut self) -> Gd<T> {
+    pub fn get<T: Inherits<Object>>(&mut self) -> Gd<T> {
         self.try_get()
             .unwrap_or_else(|| panic!("failed to get godot ref as {}", std::any::type_name::<T>()))
     }
 
     /// # SAFETY
     /// The caller must uphold the contract of the constructors to ensure exclusive access
-    pub fn try_get<T: Inherits<Node>>(&mut self) -> Option<Gd<T>> {
+    pub fn try_get<T: Inherits<Object>>(&mut self) -> Option<Gd<T>> {
         Gd::try_from_instance_id(self.instance_id).ok()
     }
 
@@ -29,7 +29,7 @@ impl ErasedGd {
     /// TODO
     /// Could these type bounds be more flexible to accomodate other types that are not ref-counted
     /// but don't inherit Node
-    pub fn new<T: Inherits<Node>>(reference: Gd<T>) -> Self {
+    pub fn new<T: Inherits<Object>>(reference: Gd<T>) -> Self {
         Self {
             instance_id: reference.instance_id(),
         }

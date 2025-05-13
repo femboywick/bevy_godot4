@@ -1,7 +1,7 @@
 use bevy::app::App;
 use godot::{
     classes::{INode, Node},
-    obj::Base,
+    obj::{Base, BaseRef, Gd, Inherits},
     prelude::{GodotClass, godot_api},
 };
 
@@ -30,6 +30,16 @@ impl BevyApp {
     pub fn get_app_mut(&mut self) -> Option<&mut App> {
         self.app.as_mut()
     }
+
+    // pub fn get_app_from_base_mut<T: GodotClass>(base: BaseRef<T>) -> Option<&mut App>
+    // where
+    //     <T as GodotClass>::Base: Inherits<Node>,
+    // {
+    //     base.clone()
+    //         .upcast::<Node>()
+    //         .get_node_as::<Self>("/root/BevyAppSingleton")
+
+    // }
 }
 
 #[godot_api]

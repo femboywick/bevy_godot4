@@ -5,10 +5,17 @@ use bevy::{
     },
     prelude::*,
 };
+use godot::{
+    classes::Node,
+    obj::{BaseRef, Inherits},
+    prelude::GodotClass,
+};
 use std::{
     marker::PhantomData,
     time::{Duration, Instant},
 };
+
+use crate::BevyApp;
 
 /// Bevy Resource that is available when the app is updated through `_process` callback
 #[derive(Resource)]
@@ -70,4 +77,16 @@ impl SystemDeltaTimer<'_, '_> {
     pub fn delta_seconds_f64(&mut self) -> f64 {
         self.delta().as_secs_f64()
     }
+}
+
+/// get &mut App from a BaseRef or BaseMut
+#[macro_export]
+macro_rules! get_app_mut {
+    ($base:expr) => {
+        $base
+            .get_node_as::<BevyApp>("/root/BevyAppSingleton")
+            .bind_mut()
+            .get_app_mut()
+            .unwrap()
+    };
 }
