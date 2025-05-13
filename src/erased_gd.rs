@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use bevy::prelude::Component;
 use godot::{
     classes::{Node, Object, Resource},
@@ -11,14 +13,14 @@ pub struct ErasedGd {
 }
 
 impl ErasedGd {
-    pub fn get<T: Inherits<Node>>(&mut self) -> Gd<T> {
+    pub fn get<T: Inherits<Object>>(&mut self) -> Gd<T> {
         self.try_get()
             .unwrap_or_else(|| panic!("failed to get godot ref as {}", std::any::type_name::<T>()))
     }
 
     /// # SAFETY
     /// The caller must uphold the contract of the constructors to ensure exclusive access
-    pub fn try_get<T: Inherits<Node>>(&mut self) -> Option<Gd<T>> {
+    pub fn try_get<T: Inherits<Object>>(&mut self) -> Option<Gd<T>> {
         Gd::try_from_instance_id(self.instance_id).ok()
     }
 
@@ -29,7 +31,7 @@ impl ErasedGd {
     /// TODO
     /// Could these type bounds be more flexible to accomodate other types that are not ref-counted
     /// but don't inherit Node
-    pub fn new<T: Inherits<Node>>(reference: Gd<T>) -> Self {
+    pub fn new<T: Inherits<Object>>(reference: Gd<T>) -> Self {
         Self {
             instance_id: reference.instance_id(),
         }
@@ -100,5 +102,31 @@ impl Drop for ErasedGdResource {
                 sys::interface_fn!(object_destroy)(gd.obj_sys());
             }
         }
+    }
+}
+
+#[derive(Debug, Component, Clone)]
+pub struct TypedErasedGd<T: GodotClass + Inherits<Object>> {
+    instance: ErasedGd,
+    _data: PhantomData<T>,
+}
+
+unsafe impl<T: GodotClass + Inherits<Object>> Send for TypedErasedGd<T> {}
+unsafe impl<T: GodotClass + Inherits<Object>> Sync for TypedErasedGd<T> {}
+
+impl<T: GodotClass + Inherits<Object>> TypedErasedGd<T> {
+    pub fn new(reference: Gd<T>) -> Self {
+        Self {
+            instance: ErasedGd::new(reference),
+            _data: PhantomData,
+        }
+    }
+
+    pub fn get(&mut self) -> Gd<T> {
+        self.instance.get::<T>()
+    }
+
+    pub fn try_get(&mut self) -> Option<Gd<T>> {
+        self.instance.try_get::<T>()
     }
 }

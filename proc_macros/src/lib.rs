@@ -1,6 +1,14 @@
 use proc_macro::TokenStream;
-use quote::quote;
-use syn::{parse_macro_input, ItemFn};
+use proc_macro2::TokenStream as TokenStream2;
+use quote::{ToTokens, quote};
+use syn::{
+    Field, FieldsUnnamed, Ident, ItemFn, Token, Type,
+    parse::Parse,
+    parse_macro_input,
+    punctuated::{Pair, Punctuated},
+    spanned::Spanned,
+    token::Comma,
+};
 
 #[proc_macro_attribute]
 pub fn bevy_app(_attr: TokenStream, item: TokenStream) -> TokenStream {
@@ -20,12 +28,144 @@ pub fn bevy_app(_attr: TokenStream, item: TokenStream) -> TokenStream {
                     }
                 }
             }
-
         }
-
         #input_fn
-
     };
 
     expanded.into()
+}
+
+struct Args {
+    name: Ident,
+    comma: Option<Token!(,)>,
+    fields: Punctuated<Field, Token!(,)>,
+}
+
+impl Parse for Args {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let name = input.parse::<Ident>()?;
+        let comma = input.parse::<Comma>().ok(); // this may have unintended consequences :P
+        let fields: Punctuated<Field, Token!(,)> = input.parse_terminated(Field::parse_named)?;
+
+        Ok(Self {
+            name,
+            comma,
+            fields,
+        })
+    }
+}
+
+struct ArgsInstance {
+    name: Ident,
+    comma: Token!(,),
+    instance: Type,
+    comma2: Option<Token!(,)>,
+    fields: Punctuated<Field, Token!(,)>,
+}
+
+impl Parse for ArgsInstance {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let name = input.parse::<Ident>()?;
+        let comma = input.parse::<Comma>()?;
+        let instance = input.parse::<Type>()?;
+        let comma2 = input.parse::<Comma>().ok(); // this may have unintended consequences :P
+        let fields: Punctuated<Field, Token!(,)> = input.parse_terminated(Field::parse_named)?;
+
+        Ok(Self {
+            name,
+            comma,
+            instance,
+            comma2,
+            fields,
+        })
+    }
+}
+
+#[proc_macro]
+pub fn signal_event(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as Args);
+    let name = input.name;
+    let fields = input.fields;
+    let types_raw = fields
+        .iter()
+        .map::<Pair<Field, Token!(,)>, _>(|field| Pair::Punctuated(field.clone(), Comma::default()))
+        .collect::<Punctuated<Field, Token!(,)>>();
+    let types_to_params = fields
+        .iter()
+        .enumerate()
+        .map(|(i, field)| {
+            let name = field.clone().ident.unwrap();
+            quote!(#name: params.#i)
+        })
+        .collect::<TokenStream2>();
+
+    let types = FieldsUnnamed {
+        paren_token: syn::token::Paren {
+            span: types_raw.span(),
+        },
+        unnamed: types_raw,
+    };
+
+    let x = quote! {
+        #[derive(bevy::prelude::Event)]
+        pub struct #name {
+            #fields
+        }
+
+        impl std::convert::From<#types> for #name {
+            fn from(params: #types) -> Self {
+                Self {
+                    #types_to_params
+                }
+            }
+        }
+    };
+
+    x.to_token_stream().into()
+}
+
+#[proc_macro]
+pub fn signal_event_instanced(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as ArgsInstance);
+    let name = input.name;
+    let instance = input.instance;
+    let fields = input.fields;
+    let types_raw = fields
+        .iter()
+        .map::<Pair<Field, Token!(,)>, _>(|field| Pair::Punctuated(field.clone(), Comma::default()))
+        .collect::<Punctuated<Field, Token!(,)>>();
+    let types_to_params = fields
+        .iter()
+        .enumerate()
+        .map(|(i, field)| {
+            let name = field.clone().ident.unwrap();
+            quote!(#name: params.1.#i)
+        })
+        .collect::<TokenStream2>();
+
+    let types = FieldsUnnamed {
+        paren_token: syn::token::Paren {
+            span: types_raw.span(),
+        },
+        unnamed: types_raw,
+    };
+
+    let x = quote! {
+        #[derive(bevy::prelude::Event)]
+        pub struct #name {
+            instance: bevy_godot4::prelude::TypedErasedGd<#instance>,
+            #fields
+        }
+
+        impl std::convert::From<(Gd<#instance>, #types)> for #name {
+            fn from(params: (Gd<#instance>, #types)) -> Self {
+                Self {
+                    instance: bevy_godot4::prelude::TypedErasedGd::new(params.0)
+                    #types_to_params
+                }
+            }
+        }
+    };
+
+    x.to_token_stream().into()
 }

@@ -5,10 +5,17 @@ use bevy::{
     },
     prelude::*,
 };
+use godot::{
+    classes::Node,
+    obj::{BaseRef, Inherits},
+    prelude::GodotClass,
+};
 use std::{
     marker::PhantomData,
     time::{Duration, Instant},
 };
+
+use crate::BevyApp;
 
 /// Bevy Resource that is available when the app is updated through `_process` callback
 #[derive(Resource)]

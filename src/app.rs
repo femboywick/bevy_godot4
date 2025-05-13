@@ -1,7 +1,7 @@
 use bevy::app::App;
 use godot::{
-    classes::{INode, Node},
-    obj::Base,
+    classes::{Engine, INode, Node, SceneTree},
+    obj::{Base, Gd},
     prelude::{GodotClass, godot_api},
 };
 
@@ -29,6 +29,16 @@ impl BevyApp {
 
     pub fn get_app_mut(&mut self) -> Option<&mut App> {
         self.app.as_mut()
+    }
+
+    pub fn singleton() -> Gd<Self> {
+        Engine::singleton()
+            .get_main_loop()
+            .unwrap()
+            .cast::<SceneTree>()
+            .get_root()
+            .unwrap()
+            .get_node_as::<Self>("BevyAppSingleton")
     }
 }
 
