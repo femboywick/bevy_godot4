@@ -2,6 +2,7 @@ mod app;
 #[cfg(feature = "assets")]
 mod assets;
 mod erased_gd;
+mod events;
 mod scene;
 mod scene_tree;
 mod utils;
@@ -15,4 +16,4 @@ pub mod prelude {
     };
     pub use bevy_godot4_proc_macros::bevy_app;
 }
-pub use app::{BevyApp, APP_BUILDER_FN};
+pub use app::{APP_BUILDER_FN, BevyApp};
