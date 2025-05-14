@@ -1,7 +1,12 @@
 use bevy::app::App;
 use godot::{
-    classes::{INode, Node},
-    obj::{Base, BaseRef, Gd, Inherits},
+    builtin::StringName,
+    classes::{
+        EditorPlugin, Engine, IEditorPlugin, INode, Node, SceneTree,
+        class_macros::sys::known_virtual_hashes::SceneTreeTimer,
+    },
+    global::godot_print,
+    obj::{Base, Gd, WithBaseField},
     prelude::{GodotClass, godot_api},
 };
 
@@ -10,6 +15,54 @@ use std::{
     panic::{AssertUnwindSafe, catch_unwind, resume_unwind},
     sync::Mutex,
 };
+
+// #[derive(GodotClass)]
+// #[class(tool, init, base=EditorPlugin)]
+// struct BevyAppEditorPlugin {
+//     base: Base<EditorPlugin>,
+// }
+
+// #[godot_api]
+// impl IEditorPlugin for BevyAppEditorPlugin {
+//     fn enter_tree(&mut self) {
+//         let singleton = Engine::singleton()
+//             .get_singleton("BevyAppSingleton")
+//             .unwrap()
+//             .cast::<BevyAppSingleton>();
+
+//         self.base_mut()
+//             .signals()
+//             .scene_changed()
+//             .connect_obj(&singleton, BevyAppSingleton::on_scene_change);
+//     }
+// }
+
+// #[derive(GodotClass)]
+// #[class(no_init, base=Object)]
+// pub struct BevyAppSingleton {
+//     pub inner: Gd<BevyApp>,
+// }
+
+// impl BevyAppSingleton {
+//     pub fn new(object: Gd<BevyApp>) -> Gd<Self> {
+//         Gd::from_object(Self { inner: object })
+//     }
+
+//     pub fn get(&self) -> Gd<BevyApp> {
+//         self.inner.clone()
+//     }
+
+//     fn on_scene_change(&mut self, mut node: Gd<Node>) {
+//         let mut inner = self.get();
+//         if inner.get_parent().is_none() {
+//             node.add_child(&inner);
+//         } else {
+//             inner.reparent(&node);
+//         }
+//         godot_print!("{}", node.get_tree_string_pretty());
+//         inner.request_ready();
+//     }
+// }
 
 lazy_static::lazy_static! {
     #[doc(hidden)]
@@ -29,6 +82,16 @@ impl BevyApp {
 
     pub fn get_app_mut(&mut self) -> Option<&mut App> {
         self.app.as_mut()
+    }
+
+    pub fn singleton() -> Gd<Self> {
+        Engine::singleton()
+            .get_main_loop()
+            .unwrap()
+            .cast::<SceneTree>()
+            .get_root()
+            .unwrap()
+            .get_node_as::<Self>("BevyAppSingleton")
     }
 
     // pub fn get_app_from_base_mut<T: GodotClass>(base: BaseRef<T>) -> Option<&mut App>
@@ -52,6 +115,8 @@ impl INode for BevyApp {
         if godot::classes::Engine::singleton().is_editor_hint() {
             return;
         }
+
+        godot_print!("app being created!");
 
         let mut app = App::new();
         (APP_BUILDER_FN.lock().unwrap().as_mut().unwrap())(&mut app);

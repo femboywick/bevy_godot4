@@ -19,42 +19,9 @@ pub fn bevy_app(_attr: TokenStream, item: TokenStream) -> TokenStream {
                         *app_builder_func = Some(Box::new(#name));
                     }
                 }
-                else if level == godot::prelude::InitLevel::Scene {
-                    // The `&str` identifies your singleton and can be
-                    // used later to access it.
-                    godot::classes::Engine::singleton().register_singleton(
-                        "BevyAppSingleton",
-                        &BevyApp::new_alloc(),
-                    );
-                }
-
-            fn on_level_deinit(level: godot::prelude::InitLevel) {
-                if level == godot::prelude::InitLevel::Scene {
-                    // Let's keep a variable of our Engine singleton instance,
-                    // and MyEngineSingleton name.
-                    let mut engine = godot::classes::Engine::singleton();
-                    let singleton_name = "MyEngineSingleton";
-
-                    // Here, we manually retrieve our singleton(s) that we've registered,
-                    // so we can unregister them and free them from memory - unregistering
-                    // singletons isn't handled automatically by the library.
-                    if let Some(my_singleton) = engine.get_singleton(singleton_name) {
-                        // Unregistering from Godot, and freeing from memory is required
-                        // to avoid memory leaks, warnings, and hot reloading problems.
-                        engine.unregister_singleton(singleton_name);
-                        my_singleton.free();
-                    } else {
-                        // You can either recover, or panic from here.
-                        godot_error!("Failed to get singleton");
-                    }
-                }
             }
-
         }
-
-
-                }
-
+        #input_fn
     };
 
     expanded.into()
