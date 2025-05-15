@@ -1,6 +1,6 @@
-use proc_macro::TokenStream;
+use proc_macro::{Ident, TokenStream};
 use quote::quote;
-use syn::{ItemFn, parse_macro_input};
+use syn::{ItemFn, parse::Parse, parse_macro_input};
 
 #[proc_macro_attribute]
 pub fn bevy_app(_attr: TokenStream, item: TokenStream) -> TokenStream {
@@ -25,4 +25,20 @@ pub fn bevy_app(_attr: TokenStream, item: TokenStream) -> TokenStream {
     };
 
     expanded.into()
+}
+
+struct Args {
+    name: Ident,
+}
+
+impl Parse for Args {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        todo!()
+    }
+}
+
+#[proc_macro]
+pub fn signal_event(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as Args);
+    todo!()
 }

@@ -1,12 +1,7 @@
 use bevy::app::App;
 use godot::{
-    builtin::StringName,
-    classes::{
-        EditorPlugin, Engine, IEditorPlugin, INode, Node, SceneTree,
-        class_macros::sys::known_virtual_hashes::SceneTreeTimer,
-    },
-    global::godot_print,
-    obj::{Base, Gd, WithBaseField},
+    classes::{Engine, INode, Node, SceneTree},
+    obj::{Base, Gd},
     prelude::{GodotClass, godot_api},
 };
 
@@ -115,8 +110,6 @@ impl INode for BevyApp {
         if godot::classes::Engine::singleton().is_editor_hint() {
             return;
         }
-
-        godot_print!("app being created!");
 
         let mut app = App::new();
         (APP_BUILDER_FN.lock().unwrap().as_mut().unwrap())(&mut app);
