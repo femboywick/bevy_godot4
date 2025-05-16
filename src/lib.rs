@@ -16,6 +16,6 @@ pub mod prelude {
     pub use super::utils::{
         AsPhysicsSystem, AsVisualSystem, GodotPhysicsFrame, GodotVisualFrame, SystemDeltaTimer,
     };
-    pub use bevy_godot4_proc_macros::bevy_app;
+    pub use bevy_godot4_proc_macros::{bevy_app, signal_event};
 }
 pub use app::{APP_BUILDER_FN, BevyApp};
