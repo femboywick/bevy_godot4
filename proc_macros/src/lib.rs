@@ -55,6 +55,30 @@ impl Parse for Args {
     }
 }
 
+fn instanceless_stream(
+    name: Ident,
+    fields: Punctuated<Field, Token!(,)>,
+    types_to_params: Punctuated<FieldValue, Token!(,)>,
+    types: FieldsUnnamed,
+) -> TokenStream {
+    quote! {
+        #[derive(bevy::prelude::Event)]
+        pub struct #name {
+            #fields
+        }
+
+        impl std::convert::From<#types> for #name {
+            fn from(params: #types) -> Self {
+                Self {
+                    #types_to_params
+                }
+            }
+        }
+    }
+    .to_token_stream()
+    .into()
+}
+
 #[proc_macro]
 pub fn signal_event(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as Args);
