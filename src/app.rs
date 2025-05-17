@@ -32,13 +32,17 @@ impl BevyApp {
     }
 
     pub fn singleton() -> Gd<Self> {
-        Engine::singleton()
-            .get_main_loop()
-            .unwrap()
-            .cast::<SceneTree>()
-            .get_root()
-            .unwrap()
-            .get_node_as::<Self>("BevyAppSingleton")
+        Self::get_singleton().expect("could not get BevyAppSingleton")
+    }
+
+    pub fn get_singleton() -> Option<Gd<Self>> {
+        Some(
+            Engine::singleton()
+                .get_main_loop()?
+                .cast::<SceneTree>()
+                .get_root()?
+                .get_node_as::<Self>("BevyAppSingleton"),
+        )
     }
 }
 
