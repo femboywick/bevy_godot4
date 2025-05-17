@@ -88,23 +88,20 @@ pub fn signal_event(input: TokenStream) -> TokenStream {
     let fields = input.fields;
     let types_raw = fields
         .iter()
-        .map::<Pair<Field, Token!(,)>, _>(|field| Pair::Punctuated(field.clone(), Comma::default()))
-        .collect::<Punctuated<Field, Token!(,)>>();
+        .map::<TokenStream2, _>(|field| {
+            let ident = field.ty.clone();
+            quote!(#ident,)
+        })
+        .collect::<TokenStream2>();
+    let types = quote!((#types_raw));
     let types_to_params = fields
         .iter()
         .enumerate()
         .map(|(i, field)| {
-            let name = field.clone().ident.unwrap();
-            quote!(#name: params.#i)
+            let name = field.clone().ident;
+            quote!(#name: params.1.#i)
         })
         .collect::<TokenStream2>();
-
-    let types = FieldsUnnamed {
-        paren_token: syn::token::Paren {
-            span: types_raw.span(),
-        },
-        unnamed: types_raw,
-    };
 
     let x = quote! {
         #[derive(bevy::prelude::Event)]
@@ -132,23 +129,20 @@ pub fn signal_event_instanced(input: TokenStream) -> TokenStream {
     let fields = input.fields;
     let types_raw = fields
         .iter()
-        .map::<Pair<Field, Token!(,)>, _>(|field| Pair::Punctuated(field.clone(), Comma::default()))
-        .collect::<Punctuated<Field, Token!(,)>>();
+        .map::<TokenStream2, _>(|field| {
+            let ident = field.ty.clone();
+            quote!(#ident,)
+        })
+        .collect::<TokenStream2>();
+    let types = quote!((#types_raw));
     let types_to_params = fields
         .iter()
         .enumerate()
         .map(|(i, field)| {
-            let name = field.clone().ident.unwrap();
+            let name = field.clone().ident;
             quote!(#name: params.1.#i)
         })
         .collect::<TokenStream2>();
-
-    let types = FieldsUnnamed {
-        paren_token: syn::token::Paren {
-            span: types_raw.span(),
-        },
-        unnamed: types_raw,
-    };
 
     let x = quote! {
         #[derive(bevy::prelude::Event)]
@@ -160,7 +154,7 @@ pub fn signal_event_instanced(input: TokenStream) -> TokenStream {
         impl std::convert::From<(Gd<#instance>, #types)> for #name {
             fn from(params: (Gd<#instance>, #types)) -> Self {
                 Self {
-                    instance: bevy_godot4::prelude::TypedErasedGd::new(params.0)
+                    instance: bevy_godot4::prelude::TypedErasedGd::new(params.0),
                     #types_to_params
                 }
             }

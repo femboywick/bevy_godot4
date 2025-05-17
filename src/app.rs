@@ -1,9 +1,7 @@
-use bevy::{
-    app::App,
-    ecs::schedule::ScheduleLabel,
-};
+use bevy::{app::App, ecs::schedule::ScheduleLabel};
 use godot::{
     classes::{Engine, INode, Node, SceneTree},
+    global::godot_print,
     obj::{Base, Gd},
     prelude::{GodotClass, godot_api},
 };

@@ -17,4 +17,4 @@ pub mod prelude {
     pub use crate::bevy_spawn;
     pub use bevy_godot4_proc_macros::{bevy_app, signal_event, signal_event_instanced};
 }
-pub use app::{APP_BUILDER_FN, BevyApp};
+pub use app::{APP_BUILDER_FN, BevyApp, PhysicsProcess};
