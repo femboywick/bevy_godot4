@@ -1,4 +1,10 @@
-use bevy::app::App;
+use bevy::{
+    app::{App, RunFixedMainLoop},
+    ecs::{
+        schedule::{Schedule, ScheduleLabel},
+        world::World,
+    },
+};
 use godot::{
     classes::{Engine, INode, Node, SceneTree},
     obj::{Base, Gd},
@@ -15,6 +21,9 @@ lazy_static::lazy_static! {
     #[doc(hidden)]
     pub static ref APP_BUILDER_FN: Mutex<Option<Box<dyn Fn(&mut App) + Send>>> = Mutex::new(None);
 }
+
+#[derive(ScheduleLabel, Clone, Eq, PartialEq, Hash, Debug)]
+pub struct PhysicsProcess;
 
 #[derive(GodotClass, Default)]
 #[class(base=Node)]
@@ -66,8 +75,6 @@ impl INode for BevyApp {
             .add_plugins(bevy::time::TimePlugin)
             .add_plugins(crate::scene::PackedScenePlugin)
             .init_non_send_resource::<crate::scene_tree::SceneTreeRefImpl>();
-        // .add_plugins(GodotSignalsPlugin)
-        // .add_plugins(GodotInputEventPlugin);
 
         #[cfg(feature = "assets")]
         app.add_plugins(crate::assets::GodotAssetsPlugin);
@@ -81,7 +88,7 @@ impl INode for BevyApp {
         }
 
         if let Some(app) = self.app.as_mut() {
-            app.insert_resource(GodotVisualFrame);
+            // app.insert_resource(GodotVisualFrame);
 
             if let Err(e) = catch_unwind(AssertUnwindSafe(|| app.update())) {
                 self.app = None;
@@ -90,7 +97,7 @@ impl INode for BevyApp {
                 resume_unwind(e);
             }
 
-            app.world_mut().remove_resource::<GodotVisualFrame>();
+            // app.world_mut().remove_resource::<GodotVisualFrame>();
         }
     }
 
@@ -100,16 +107,18 @@ impl INode for BevyApp {
         }
 
         if let Some(app) = self.app.as_mut() {
-            app.insert_resource(GodotPhysicsFrame);
+            // app.insert_resource(GodotPhysicsFrame);
 
-            if let Err(e) = catch_unwind(AssertUnwindSafe(|| app.update())) {
+            if let Err(e) = catch_unwind(AssertUnwindSafe(|| {
+                app.world_mut().run_schedule(PhysicsProcess)
+            })) {
                 self.app = None;
 
                 eprintln!("bevy app update panicked");
                 resume_unwind(e);
             }
 
-            app.world_mut().remove_resource::<GodotPhysicsFrame>();
+            // app.world_mut().remove_resource::<GodotPhysicsFrame>();
         }
     }
 }

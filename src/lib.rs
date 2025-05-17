@@ -1,4 +1,4 @@
-#![feature(fn_traits)]
+#![feature(trivial_bounds, fn_traits)]
 mod app;
 #[cfg(feature = "assets")]
 mod assets;
@@ -13,10 +13,7 @@ pub mod prelude {
     pub use super::events::SignalEventEmpty;
     pub use super::scene::GodotScene;
     pub use super::scene_tree::SceneTreeRef;
-    pub use super::utils::{
-        AsPhysicsSystem, AsVisualSystem, AsVisualSystems, GodotPhysicsFrame, GodotVisualFrame,
-        SystemDeltaTimer,
-    };
+    pub use super::utils::{GodotPhysicsFrame, GodotVisualFrame, SystemDeltaTimer};
     pub use crate::bevy_spawn;
     pub use bevy_godot4_proc_macros::{bevy_app, signal_event, signal_event_instanced};
 }
