@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use bevy::prelude::Component;
 use godot::{
-    classes::{Node, Object, Resource},
+    classes::{Object, Resource},
     obj::{Bounds, Gd, GodotClass, Inherits, InstanceId, RawGd, bounds::DynMemory},
     sys,
 };

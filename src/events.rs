@@ -4,7 +4,7 @@ use bevy_godot4_proc_macros::signal_event;
 use godot::{
     global::godot_print,
     meta::{InParamTuple, ParamTuple},
-    obj::{Bounds, Gd, GodotClass, WithBaseField, WithSignals, bounds::DeclUser},
+    obj::{Gd, GodotClass, WithSignals},
     register::{SignalReceiver, TypedSignal},
 };
 
@@ -40,7 +40,7 @@ where
         if instance.is_some() {
             panic!("tried to convert gd instance to empty instance")
         }
-        ()
+        
     }
 }
 
@@ -90,7 +90,7 @@ impl<'c> BevyApp {
 
     pub fn add_event_instanced<E, Ps, C>(
         &mut self,
-        mut instance: Gd<C>,
+        instance: Gd<C>,
         signal: &mut TypedSignal<'c, C, Ps>,
     ) where
         Ps: ParamTuple + InParamTuple + 'static,

@@ -1,9 +1,6 @@
 use bevy::{
-    app::{App, RunFixedMainLoop},
-    ecs::{
-        schedule::{Schedule, ScheduleLabel},
-        world::World,
-    },
+    app::App,
+    ecs::schedule::ScheduleLabel,
 };
 use godot::{
     classes::{Engine, INode, Node, SceneTree},
@@ -11,7 +8,6 @@ use godot::{
     prelude::{GodotClass, godot_api},
 };
 
-use crate::prelude::*;
 use std::{
     panic::{AssertUnwindSafe, catch_unwind, resume_unwind},
     sync::Mutex,
