@@ -78,3 +78,16 @@ impl SystemDeltaTimer<'_, '_> {
         self.delta().as_secs_f64()
     }
 }
+
+#[macro_export]
+macro_rules! bevy_spawn {
+    ($($component:expr),+) => {
+
+        bevy_godot4::BevyApp::singleton()
+            .bind_mut()
+            .get_app_mut()
+            .unwrap()
+            .world_mut()
+            .spawn(( $($component),+ ))
+    };
+}
