@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use bevy::prelude::Component;
 use godot::{
     classes::{Node, Object, Resource},
@@ -100,5 +102,31 @@ impl Drop for ErasedGdResource {
                 sys::interface_fn!(object_destroy)(gd.obj_sys());
             }
         }
+    }
+}
+
+#[derive(Debug, Component, Clone)]
+pub struct TypedErasedGd<T: GodotClass + Inherits<Object>> {
+    instance: ErasedGd,
+    _data: PhantomData<T>,
+}
+
+unsafe impl<T: GodotClass + Inherits<Object>> Send for TypedErasedGd<T> {}
+unsafe impl<T: GodotClass + Inherits<Object>> Sync for TypedErasedGd<T> {}
+
+impl<T: GodotClass + Inherits<Object>> TypedErasedGd<T> {
+    pub fn new(reference: Gd<T>) -> Self {
+        Self {
+            instance: ErasedGd::new(reference),
+            _data: PhantomData,
+        }
+    }
+
+    pub fn get(&mut self) -> Gd<T> {
+        self.instance.get::<T>()
+    }
+
+    pub fn try_get(&mut self) -> Option<Gd<T>> {
+        self.instance.try_get::<T>()
     }
 }
