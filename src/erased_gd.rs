@@ -108,11 +108,11 @@ impl Drop for ErasedGdResource {
 #[derive(Debug, Component, Clone)]
 pub struct TypedErasedGd<T: GodotClass + Inherits<Object>> {
     instance: ErasedGd,
-    _data: PhantomData<T>,
+    _data: PhantomData<fn() -> T>,
 }
 
-unsafe impl<T: GodotClass + Inherits<Object>> Send for TypedErasedGd<T> {}
-unsafe impl<T: GodotClass + Inherits<Object>> Sync for TypedErasedGd<T> {}
+// unsafe impl<T: GodotClass + Inherits<Object>> Send for TypedErasedGd<T> {}
+// unsafe impl<T: GodotClass + Inherits<Object>> Sync for TypedErasedGd<T> {}
 
 impl<T: GodotClass + Inherits<Object>> TypedErasedGd<T> {
     pub fn new(reference: Gd<T>) -> Self {

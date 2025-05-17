@@ -1,21 +1,14 @@
 use bevy::{
     ecs::{
-        schedule::ScheduleConfigs,
+        schedule::{Chain, Schedulable, ScheduleConfigs, graph::GraphInfo},
         system::{ScheduleSystem, SystemParam},
     },
     prelude::*,
-};
-use godot::{
-    classes::Node,
-    obj::{BaseRef, Inherits},
-    prelude::GodotClass,
 };
 use std::{
     marker::PhantomData,
     time::{Duration, Instant},
 };
-
-use crate::BevyApp;
 
 /// Bevy Resource that is available when the app is updated through `_process` callback
 #[derive(Resource)]
@@ -82,7 +75,6 @@ impl SystemDeltaTimer<'_, '_> {
 #[macro_export]
 macro_rules! bevy_spawn {
     ($($component:expr),+) => {
-
         bevy_godot4::BevyApp::singleton()
             .bind_mut()
             .get_app_mut()

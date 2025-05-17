@@ -14,7 +14,8 @@ pub mod prelude {
     pub use super::scene::GodotScene;
     pub use super::scene_tree::SceneTreeRef;
     pub use super::utils::{
-        AsPhysicsSystem, AsVisualSystem, GodotPhysicsFrame, GodotVisualFrame, SystemDeltaTimer,
+        AsPhysicsSystem, AsVisualSystem, AsVisualSystems, GodotPhysicsFrame, GodotVisualFrame,
+        SystemDeltaTimer,
     };
     pub use crate::bevy_spawn;
     pub use bevy_godot4_proc_macros::{bevy_app, signal_event, signal_event_instanced};
