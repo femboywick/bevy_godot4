@@ -21,27 +21,12 @@ where
     }
 }
 
-struct EventSignalObjReciever<C: GodotClass, Ps: ParamTuple> {
-    func: Box<dyn Fn(&mut C, Ps)>,
-}
-
-impl<C, Ps> SignalReceiver<&mut C, Ps> for EventSignalObjReciever<C, Ps>
-where
-    Ps: ParamTuple + 'static,
-    C: GodotClass,
-{
-    fn call(&mut self, instance: &mut C, params: Ps) {
-        self.func.call((instance, params));
-    }
-}
-
 trait Instance<Ps, C, E>: Sized
 where
     Ps: ParamTuple + InParamTuple + 'static,
     C: WithSignals + GodotClass,
     E: Event + From<(Self, Ps)>,
 {
-    fn from_instance(instance: Option<Gd<C>>) -> Self;
 }
 
 impl<Ps, C, E> Instance<Ps, C, E> for ()
@@ -50,11 +35,6 @@ where
     C: WithSignals + GodotClass,
     E: Event + From<(Self, Ps)>,
 {
-    fn from_instance(instance: Option<Gd<C>>) -> Self {
-        if instance.is_some() {
-            panic!("tried to convert gd instance to empty instance")
-        }
-    }
 }
 
 impl<Ps, C, E> Instance<Ps, C, E> for Gd<C>
@@ -63,12 +43,6 @@ where
     C: WithSignals + GodotClass,
     E: Event + From<(Self, Ps)>,
 {
-    fn from_instance(instance: Option<Gd<C>>) -> Self {
-        let Some(value) = instance else {
-            panic!("tried to convert empty instance into a gd");
-        };
-        value
-    }
 }
 
 fn send_event<'a, E, Ps, I, C>(instance: I, params: Ps)
