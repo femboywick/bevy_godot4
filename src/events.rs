@@ -4,7 +4,7 @@ use bevy_godot4_proc_macros::signal_event;
 use godot::{
     global::godot_print,
     meta::{InParamTuple, ParamTuple},
-    obj::{Gd, GodotClass, WithSignals},
+    obj::{Bounds, Gd, GodotClass, WithSignals, bounds::DeclUser},
     register::{SignalReceiver, TypedSignal},
 };
 
@@ -18,6 +18,20 @@ where
 {
     fn call(&mut self, _instance: (), params: Ps) {
         self.func.call((params,));
+    }
+}
+
+struct EventSignalObjReciever<C: GodotClass, Ps: ParamTuple> {
+    func: Box<dyn Fn(&mut C, Ps)>,
+}
+
+impl<C, Ps> SignalReceiver<&mut C, Ps> for EventSignalObjReciever<C, Ps>
+where
+    Ps: ParamTuple + 'static,
+    C: GodotClass,
+{
+    fn call(&mut self, instance: &mut C, params: Ps) {
+        self.func.call((instance, params));
     }
 }
 
@@ -40,7 +54,6 @@ where
         if instance.is_some() {
             panic!("tried to convert gd instance to empty instance")
         }
-        
     }
 }
 
@@ -65,13 +78,37 @@ where
     I: Instance<Ps, C, E>,
     E: Event + From<(I, Ps)>,
 {
-    let x = BevyApp::singleton()
+    let mut event = E::from((instance, params));
+    BevyApp::singleton()
         .bind_mut()
-        .get_app_mut()
-        .unwrap()
+        .app_mut()
         .world_mut()
-        .send_event::<E>(E::from((instance, params)));
-    godot_print!("{x:?}");
+        .trigger_ref(&mut event);
+    BevyApp::singleton()
+        .bind_mut()
+        .app_mut()
+        .world_mut()
+        .send_event::<E>(event);
+}
+
+fn send_event_obj<'a, E, Ps, T, C>(instance: Gd<T>, params: Ps)
+where
+    Ps: ParamTuple + InParamTuple + 'static,
+    C: WithSignals,
+    T: GodotClass,
+    E: Event + From<(Gd<T>, Ps)>,
+{
+    let mut event = E::from((instance, params));
+    BevyApp::singleton()
+        .bind_mut()
+        .app_mut()
+        .world_mut()
+        .trigger_ref(&mut event);
+    BevyApp::singleton()
+        .bind_mut()
+        .app_mut()
+        .world_mut()
+        .send_event::<E>(event);
 }
 
 impl<'c> BevyApp {
@@ -99,6 +136,21 @@ impl<'c> BevyApp {
     {
         signal.connect(EventSignalReciever {
             func: (Box::new(move |params| send_event::<E, Ps, Gd<C>, C>(instance.clone(), params))),
+        });
+    }
+
+    pub fn add_event_obj<E, Ps, C, T>(
+        &mut self,
+        instance: Gd<T>,
+        signal: &mut TypedSignal<'c, C, Ps>,
+    ) where
+        Ps: ParamTuple + InParamTuple + 'static,
+        C: WithSignals,
+        E: Event + From<(Gd<T>, Ps)>,
+        T: GodotClass + Bounds<Declarer = DeclUser>,
+    {
+        signal.connect(EventSignalReciever {
+            func: (Box::new(move |params| send_event_obj::<E, Ps, T, C>(instance.clone(), params))),
         });
     }
 }
