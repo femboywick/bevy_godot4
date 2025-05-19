@@ -37,19 +37,19 @@ pub fn bevy_app(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
 struct Args {
     name: Ident,
-    comma: Option<Token!(,)>,
+    _comma: Option<Token!(,)>,
     fields: Punctuated<Field, Token!(,)>,
 }
 
 impl Parse for Args {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let name = input.parse::<Ident>()?;
-        let comma = input.parse::<Comma>().ok(); // this may have unintended consequences :P
+        let _comma = input.parse::<Comma>().ok(); // this may have unintended consequences :P
         let fields: Punctuated<Field, Token!(,)> = input.parse_terminated(Field::parse_named)?;
 
         Ok(Self {
             name,
-            comma,
+            _comma,
             fields,
         })
     }
@@ -57,25 +57,25 @@ impl Parse for Args {
 
 struct ArgsInstance {
     name: Ident,
-    comma: Token!(,),
+    _comma: Token!(,),
     instance: Type,
-    comma2: Option<Token!(,)>,
+    _comma2: Option<Token!(,)>,
     fields: Punctuated<Field, Token!(,)>,
 }
 
 impl Parse for ArgsInstance {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let name = input.parse::<Ident>()?;
-        let comma = input.parse::<Comma>()?;
+        let _comma = input.parse::<Comma>()?;
         let instance = input.parse::<Type>()?;
-        let comma2 = input.parse::<Comma>().ok(); // this may have unintended consequences :P
+        let _comma2 = input.parse::<Comma>().ok(); // this may have unintended consequences :P
         let fields: Punctuated<Field, Token!(,)> = input.parse_terminated(Field::parse_named)?;
 
         Ok(Self {
             name,
-            comma,
+            _comma,
             instance,
-            comma2,
+            _comma2,
             fields,
         })
     }
@@ -109,8 +109,8 @@ pub fn signal_event(input: TokenStream) -> TokenStream {
             #fields
         }
 
-        impl std::convert::From<#types> for #name {
-            fn from(params: #types) -> Self {
+        impl std::convert::From<((), #types)> for #name {
+            fn from(params: ((), #types)) -> Self {
                 Self {
                     #types_to_params
                 }

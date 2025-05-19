@@ -1,21 +1,11 @@
-use bevy::prelude::IntoScheduleConfigs;
 use bevy::{
-    app::{App, First, FixedMain, FixedMainScheduleOrder, Main, MainScheduleOrder, Plugin},
-    ecs::{
-        component::Tick,
-        event::{EventRegistry, ShouldUpdateEvents},
-        hierarchy::{ChildOf, Children},
-        name::Name,
-        reflect::AppTypeRegistry,
-        schedule::{ExecutorKind, Schedule, ScheduleLabel},
-        system::Local,
-        world::{Mut, World},
-    },
+    app::{App, FixedMain, Main},
+    ecs::schedule::ScheduleLabel,
+    log::tracing::{self, Subscriber, span},
     time::{Fixed, Time},
 };
 use godot::{
     classes::{Engine, INode, Node, SceneTree},
-    global::godot_print,
     obj::{Base, Gd},
     prelude::{GodotClass, godot_api},
 };
@@ -83,21 +73,6 @@ impl INode for BevyApp {
         }
 
         let mut app = App::new();
-        // app.sub_apps_mut().main.update_schedule = Some(Main.intern());
-
-        // app.init_resource::<AppTypeRegistry>()
-        //     .register_type::<Name>()
-        //     .register_type::<ChildOf>()
-        //     .register_type::<Children>()
-        //     .add_plugins(GodotSchedulePlugin);
-
-        // app.add_systems(
-        //     First,
-        //     event_update_system
-        //         .in_set(bevy::ecs::event::EventUpdates)
-        //         .run_if(bevy::ecs::event::event_update_condition),
-        // );
-
         app.add_plugins(bevy::app::TaskPoolPlugin::default())
             .add_plugins(bevy::log::LogPlugin::default())
             .add_plugins(bevy::diagnostic::FrameCountPlugin)
@@ -105,7 +80,6 @@ impl INode for BevyApp {
             .add_plugins(bevy::time::TimePlugin)
             .add_plugins(crate::scene::PackedScenePlugin)
             .init_non_send_resource::<crate::scene_tree::SceneTreeRefImpl>()
-            // .add_schedule(Schedule::new(PhysicsProcess));
             .insert_resource(Time::<Fixed>::from_hz(60.));
 
         (APP_BUILDER_FN.lock().unwrap().as_mut().unwrap())(&mut app);
@@ -124,16 +98,12 @@ impl INode for BevyApp {
         }
 
         if let Some(app) = self.app.as_mut() {
-            // app.insert_resource(GodotVisualFrame);
-
             if let Err(e) = catch_unwind(AssertUnwindSafe(|| app.world_mut().run_schedule(Main))) {
                 self.app = None;
 
                 eprintln!("bevy app update panicked");
                 resume_unwind(e);
             }
-
-            // app.world_mut().remove_resource::<GodotVisualFrame>();
         }
     }
 
@@ -143,8 +113,6 @@ impl INode for BevyApp {
         }
 
         if let Some(app) = self.app.as_mut() {
-            // app.insert_resource(GodotPhysicsFrame);
-
             if let Err(e) =
                 catch_unwind(AssertUnwindSafe(|| app.world_mut().run_schedule(FixedMain)))
             {
@@ -153,44 +121,6 @@ impl INode for BevyApp {
                 eprintln!("bevy app update panicked");
                 resume_unwind(e);
             }
-
-            // app.world_mut().remove_resource::<GodotPhysicsFrame>();
         }
     }
 }
-
-// struct GodotSchedulePlugin;
-
-// impl Plugin for GodotSchedulePlugin {
-//     fn build(&self, app: &mut App) {
-//         let mut main_schedule = Schedule::new(Main);
-//         main_schedule.set_executor_kind(ExecutorKind::SingleThreaded);
-//         let mut fixed_main_schedule = Schedule::new(FixedMain);
-//         fixed_main_schedule.set_executor_kind(ExecutorKind::SingleThreaded);
-
-//         app.add_schedule(main_schedule)
-//             .add_schedule(fixed_main_schedule)
-//             .init_resource::<MainScheduleOrder>()
-//             .init_resource::<FixedMainScheduleOrder>()
-//             .add_systems(Main, Main::run_main)
-//             .add_systems(FixedMain, FixedMain::run_fixed_main);
-//     }
-// }
-
-// pub fn event_update_system(world: &mut World, mut last_change_tick: Local<Tick>) {
-//     if world.contains_resource::<EventRegistry>() {
-//         world.resource_scope(|world, mut registry: Mut<EventRegistry>| {
-//             registry.run_updates(world, *last_change_tick);
-
-//             registry.should_update = match registry.should_update {
-//                 // If we're always updating, keep doing so.
-//                 ShouldUpdateEvents::Always => ShouldUpdateEvents::Always,
-//                 // Disable the system until signal_event_update_system runs again.
-//                 ShouldUpdateEvents::Waiting | ShouldUpdateEvents::Ready => {
-//                     ShouldUpdateEvents::Waiting
-//                 }
-//             };
-//         });
-//     }
-//     *last_change_tick = world.change_tick();
-// }

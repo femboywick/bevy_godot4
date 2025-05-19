@@ -1,4 +1,4 @@
-use std::marker::PhantomData;
+use std::{marker::PhantomData, ops::Deref};
 
 use bevy::prelude::Component;
 use godot::{
@@ -7,7 +7,7 @@ use godot::{
     sys,
 };
 
-#[derive(Debug, Component, Clone)]
+#[derive(Debug, Component, Clone, Copy)]
 pub struct ErasedGd {
     instance_id: InstanceId,
 }
@@ -35,6 +35,14 @@ impl ErasedGd {
         Self {
             instance_id: reference.instance_id(),
         }
+    }
+
+    pub fn from_id(id: InstanceId) -> Self {
+        Self { instance_id: id }
+    }
+
+    pub fn to_typed<T: GodotClass + Inherits<Object>>(self) -> TypedErasedGd<T> {
+        TypedErasedGd::from_id(self.instance_id)
     }
 }
 
@@ -105,19 +113,31 @@ impl Drop for ErasedGdResource {
     }
 }
 
-#[derive(Debug, Component, Clone)]
+#[derive(Debug, Component)]
 pub struct TypedErasedGd<T: GodotClass + Inherits<Object>> {
     instance: ErasedGd,
     _data: PhantomData<fn() -> T>,
 }
 
-// unsafe impl<T: GodotClass + Inherits<Object>> Send for TypedErasedGd<T> {}
-// unsafe impl<T: GodotClass + Inherits<Object>> Sync for TypedErasedGd<T> {}
+impl<T: Inherits<Object>> Clone for TypedErasedGd<T> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<T: Inherits<Object>> Copy for TypedErasedGd<T> {}
 
 impl<T: GodotClass + Inherits<Object>> TypedErasedGd<T> {
     pub fn new(reference: Gd<T>) -> Self {
         Self {
             instance: ErasedGd::new(reference),
+            _data: PhantomData,
+        }
+    }
+
+    pub fn from_id(id: InstanceId) -> Self {
+        Self {
+            instance: ErasedGd::from_id(id),
             _data: PhantomData,
         }
     }
@@ -128,5 +148,17 @@ impl<T: GodotClass + Inherits<Object>> TypedErasedGd<T> {
 
     pub fn try_get(&mut self) -> Option<Gd<T>> {
         self.instance.try_get::<T>()
+    }
+
+    pub fn erase_type(self) -> ErasedGd {
+        self.instance
+    }
+}
+
+impl<T: GodotClass + Inherits<Object>> Deref for TypedErasedGd<T> {
+    type Target = ErasedGd;
+
+    fn deref(&self) -> &Self::Target {
+        &self.instance
     }
 }

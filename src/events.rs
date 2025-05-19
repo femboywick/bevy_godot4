@@ -21,56 +21,17 @@ where
     }
 }
 
-trait Instance<Ps, C, E>: Sized
-where
-    Ps: ParamTuple + InParamTuple + 'static,
-    C: WithSignals + GodotClass,
-    E: Event + From<(Self, Ps)>,
-{
-}
+trait Instance {}
 
-impl<Ps, C, E> Instance<Ps, C, E> for ()
-where
-    Ps: ParamTuple + InParamTuple + 'static,
-    C: WithSignals + GodotClass,
-    E: Event + From<(Self, Ps)>,
-{
-}
+impl Instance for () {}
 
-impl<Ps, C, E> Instance<Ps, C, E> for Gd<C>
-where
-    Ps: ParamTuple + InParamTuple + 'static,
-    C: WithSignals + GodotClass,
-    E: Event + From<(Self, Ps)>,
-{
-}
+impl<C: GodotClass> Instance for Gd<C> {}
 
-fn send_event<'a, E, Ps, I, C>(instance: I, params: Ps)
+fn send_event<E, Ps, T>(instance: T, params: Ps)
 where
     Ps: ParamTuple + InParamTuple + 'static,
-    C: WithSignals,
-    I: Instance<Ps, C, E>,
-    E: Event + From<(I, Ps)>,
-{
-    let mut event = E::from((instance, params));
-    BevyApp::singleton()
-        .bind_mut()
-        .app_mut()
-        .world_mut()
-        .trigger_ref(&mut event);
-    BevyApp::singleton()
-        .bind_mut()
-        .app_mut()
-        .world_mut()
-        .send_event::<E>(event);
-}
-
-fn send_event_obj<'a, E, Ps, T, C>(instance: Gd<T>, params: Ps)
-where
-    Ps: ParamTuple + InParamTuple + 'static,
-    C: WithSignals,
-    T: GodotClass,
-    E: Event + From<(Gd<T>, Ps)>,
+    T: Instance,
+    E: Event + From<(T, Ps)>,
 {
     let mut event = E::from((instance, params));
     BevyApp::singleton()
@@ -95,7 +56,7 @@ impl<'c> BevyApp {
         godot_print!("init event");
 
         signal.connect(EventSignalReciever {
-            func: Box::new(move |params| send_event::<E, Ps, (), C>((), params)),
+            func: Box::new(move |params| send_event::<E, Ps, ()>((), params)),
         });
     }
 
@@ -109,7 +70,7 @@ impl<'c> BevyApp {
         E: Event + From<(Gd<C>, Ps)>,
     {
         signal.connect(EventSignalReciever {
-            func: (Box::new(move |params| send_event::<E, Ps, Gd<C>, C>(instance.clone(), params))),
+            func: (Box::new(move |params| send_event::<E, Ps, Gd<C>>(instance.clone(), params))),
         });
     }
 
@@ -124,7 +85,7 @@ impl<'c> BevyApp {
         T: GodotClass + Bounds<Declarer = DeclUser>,
     {
         signal.connect(EventSignalReciever {
-            func: (Box::new(move |params| send_event_obj::<E, Ps, T, C>(instance.clone(), params))),
+            func: (Box::new(move |params| send_event::<E, Ps, Gd<T>>(instance.clone(), params))),
         });
     }
 }
