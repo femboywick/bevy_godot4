@@ -1,7 +1,6 @@
 use bevy::{
     app::{App, FixedMain, Main},
     ecs::schedule::ScheduleLabel,
-    log::tracing::{self, Subscriber, span},
     time::{Fixed, Time},
 };
 use godot::{
@@ -97,14 +96,13 @@ impl INode for BevyApp {
             return;
         }
 
-        if let Some(app) = self.app.as_mut() {
-            if let Err(e) = catch_unwind(AssertUnwindSafe(|| app.world_mut().run_schedule(Main))) {
+        if let Some(app) = self.app.as_mut()
+            && let Err(e) = catch_unwind(AssertUnwindSafe(|| app.world_mut().run_schedule(Main))) {
                 self.app = None;
 
                 eprintln!("bevy app update panicked");
                 resume_unwind(e);
             }
-        }
     }
 
     fn physics_process(&mut self, _delta: f64) {
@@ -112,8 +110,8 @@ impl INode for BevyApp {
             return;
         }
 
-        if let Some(app) = self.app.as_mut() {
-            if let Err(e) =
+        if let Some(app) = self.app.as_mut()
+            && let Err(e) =
                 catch_unwind(AssertUnwindSafe(|| app.world_mut().run_schedule(FixedMain)))
             {
                 self.app = None;
@@ -121,6 +119,5 @@ impl INode for BevyApp {
                 eprintln!("bevy app update panicked");
                 resume_unwind(e);
             }
-        }
     }
 }
