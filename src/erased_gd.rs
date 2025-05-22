@@ -3,7 +3,10 @@ use std::{marker::PhantomData, ops::Deref};
 use bevy::prelude::Component;
 use godot::{
     classes::{Object, Resource},
-    obj::{Bounds, Gd, GodotClass, Inherits, InstanceId, RawGd, bounds::DynMemory},
+    obj::{
+        AsDyn, Bounds, DynGd, Gd, GodotClass, Inherits, InstanceId, RawGd,
+        bounds::{DeclUser, DynMemory},
+    },
     sys,
 };
 
@@ -156,6 +159,66 @@ impl<T: GodotClass + Inherits<Object>> TypedErasedGd<T> {
 }
 
 impl<T: GodotClass + Inherits<Object>> Deref for TypedErasedGd<T> {
+    type Target = ErasedGd;
+
+    fn deref(&self) -> &Self::Target {
+        &self.instance
+    }
+}
+
+#[derive(Debug, Component)]
+pub struct DynErasedGd<D: ?Sized> {
+    instance: ErasedGd,
+    _data: PhantomData<fn() -> D>,
+}
+impl<T: Inherits<Object>> Clone for DynErasedGd<T> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<T: Inherits<Object>> Copy for DynErasedGd<T> {}
+
+impl<D: ?Sized> DynErasedGd<D> {
+    pub fn new_dyn<T: GodotClass + Inherits<Object>>(reference: DynGd<T, D>) -> Self {
+        Self {
+            instance: ErasedGd::new((*reference).clone()),
+            _data: PhantomData,
+        }
+    }
+
+    pub fn new<T: GodotClass + Inherits<Object>>(reference: Gd<T>) -> Self {
+        Self {
+            instance: ErasedGd::new(reference),
+            _data: PhantomData,
+        }
+    }
+
+    pub fn from_id(id: InstanceId) -> Self {
+        Self {
+            instance: ErasedGd::from_id(id),
+            _data: PhantomData,
+        }
+    }
+
+    pub fn get<T: GodotClass + Inherits<Object> + AsDyn<D> + Bounds<Declarer = DeclUser>>(
+        &mut self,
+    ) -> DynGd<T, D> {
+        self.instance.get::<T>().into_dyn::<D>()
+    }
+
+    pub fn try_get<T: GodotClass + Inherits<Object> + AsDyn<D> + Bounds<Declarer = DeclUser>>(
+        &mut self,
+    ) -> Option<DynGd<T, D>> {
+        self.instance.try_get::<T>().map(|i| i.into_dyn::<D>())
+    }
+
+    pub fn erase_type(self) -> ErasedGd {
+        self.instance
+    }
+}
+
+impl<T: GodotClass + Inherits<Object>> Deref for DynErasedGd<T> {
     type Target = ErasedGd;
 
     fn deref(&self) -> &Self::Target {

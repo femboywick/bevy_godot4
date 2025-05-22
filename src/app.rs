@@ -1,6 +1,5 @@
 use bevy::{
     app::{App, FixedMain, Main},
-    ecs::schedule::ScheduleLabel,
     time::{Fixed, Time},
 };
 use godot::{
@@ -18,9 +17,6 @@ lazy_static::lazy_static! {
     #[doc(hidden)]
     pub static ref APP_BUILDER_FN: Mutex<Option<Box<dyn Fn(&mut App) + Send>>> = Mutex::new(None);
 }
-
-#[derive(ScheduleLabel, Clone, Eq, PartialEq, Hash, Debug)]
-pub struct PhysicsProcess;
 
 #[derive(GodotClass, Default)]
 #[class(base=Node)]
@@ -97,12 +93,13 @@ impl INode for BevyApp {
         }
 
         if let Some(app) = self.app.as_mut()
-            && let Err(e) = catch_unwind(AssertUnwindSafe(|| app.world_mut().run_schedule(Main))) {
-                self.app = None;
+            && let Err(e) = catch_unwind(AssertUnwindSafe(|| app.world_mut().run_schedule(Main)))
+        {
+            self.app = None;
 
-                eprintln!("bevy app update panicked");
-                resume_unwind(e);
-            }
+            eprintln!("bevy app update panicked");
+            resume_unwind(e);
+        }
     }
 
     fn physics_process(&mut self, _delta: f64) {
@@ -113,11 +110,11 @@ impl INode for BevyApp {
         if let Some(app) = self.app.as_mut()
             && let Err(e) =
                 catch_unwind(AssertUnwindSafe(|| app.world_mut().run_schedule(FixedMain)))
-            {
-                self.app = None;
+        {
+            self.app = None;
 
-                eprintln!("bevy app update panicked");
-                resume_unwind(e);
-            }
+            eprintln!("bevy app update panicked");
+            resume_unwind(e);
+        }
     }
 }

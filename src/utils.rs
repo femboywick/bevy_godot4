@@ -1,43 +1,68 @@
 use bevy::{
-    ecs::system::SystemParam,
+    ecs::{component::ComponentInfo, system::SystemParam},
     prelude::*,
+};
+use godot::{
+    classes::{Node, Object},
+    global::godot_print,
+    obj::{AsDyn, Bounds, Inherits, bounds::DeclUser},
 };
 use std::{
     marker::PhantomData,
     time::{Duration, Instant},
 };
 
-/// Bevy Resource that is available when the app is updated through `_process` callback
-#[derive(Resource)]
-pub struct GodotVisualFrame;
+use crate::{erased_gd::DynErasedGd, prelude::TypedErasedGd};
 
-/// Bevy Resource that is available when the app is updated through `_physics_process` callback
-#[derive(Resource)]
-pub struct GodotPhysicsFrame;
+pub trait HasEntity {
+    fn entity(&self) -> Entity {
+        self.get_entity().expect("could not get entity")
+    }
+    fn get_entity(&self) -> Option<Entity>;
+}
 
-// /// Adds `as_physics_system` that schedules a system only for the physics frame
-// pub trait AsPhysicsSystem<Params> {
-//     #[allow(clippy::wrong_self_convention)]
-//     fn as_physics_system(self) -> ScheduleConfigs<ScheduleSystem>;
-// }
+#[derive(Component)]
+pub struct ComponentMarker {
+    parent: DynErasedGd<dyn HasEntity>,
+}
 
-// impl<Params, T: IntoSystem<(), (), Params>> AsPhysicsSystem<Params> for T {
-//     fn as_physics_system(self) -> ScheduleConfigs<ScheduleSystem> {
-//         self.run_if(resource_exists::<GodotPhysicsFrame>)
-//     }
-// }
+impl ComponentMarker {
+    pub fn new(parent: DynErasedGd<dyn HasEntity>) -> Self {
+        Self { parent }
+    }
+}
 
-// /// Adds `as_visual_system` that schedules a system only for the frame
-// pub trait AsVisualSystem<Params> {
-//     #[allow(clippy::wrong_self_convention)]
-//     fn as_visual_system(self) -> ScheduleConfigs<ScheduleSystem>;
-// }
+pub fn add_components<T: Inherits<Object> + HasEntity + AsDyn<dyn HasEntity>>(
+    mut children: Query<(Entity, &mut ComponentMarker)>,
+    mut commands: Commands,
+) where
+    T: Bounds<Declarer = DeclUser>,
+{
+    for (entity_id, mut child) in children.iter_mut() {
+        let Some(target_gd) = child.parent.try_get::<T>() else {
+            continue;
+        };
+        let target = target_gd.bind().entity();
+        commands
+            .entity(entity_id)
+            .remove::<ComponentMarker>()
+            .clone_with(target, |_| {})
+            .despawn();
 
-// impl<Params, T: IntoSystem<(), (), Params>> AsVisualSystem<Params> for T {
-//     fn as_visual_system(self) -> ScheduleConfigs<ScheduleSystem> {
-//         self.run_if(resource_exists::<GodotVisualFrame>)
-//     }
-// }
+        commands.entity(target).queue(log_components);
+        // .queue(log_components);
+    }
+}
+
+pub fn log_components(entity: EntityWorldMut) {
+    let debug_infos: Vec<_> = entity
+        .world()
+        .inspect_entity(entity.id())
+        .expect("Entity existence is verified before an EntityCommand is executed")
+        .map(ComponentInfo::name)
+        .collect();
+    godot_print!("Entity {}: {debug_infos:?}", entity.id());
+}
 
 /// SystemParam to keep track of an independent delta time
 ///
