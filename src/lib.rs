@@ -10,7 +10,7 @@ mod utils;
 
 pub mod prelude {
     pub use super::erased_gd::{DynErasedGd, ErasedGd, ErasedGdResource, TypedErasedGd};
-    pub use super::events::SignalEventEmpty;
+    pub use super::events::{AddEvent, SignalEventEmpty};
     pub use super::scene::GodotScene;
     pub use super::scene_tree::SceneTreeRef;
     pub use super::utils::{ComponentMarker, HasEntity, SystemDeltaTimer, add_components};

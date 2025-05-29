@@ -3,6 +3,7 @@ use std::{marker::PhantomData, ops::Deref};
 use bevy::prelude::Component;
 use godot::{
     classes::{Object, Resource},
+    meta::{FromGodot, GodotConvert},
     obj::{
         AsDyn, Bounds, DynGd, Gd, GodotClass, Inherits, InstanceId, RawGd,
         bounds::{DeclUser, DynMemory},
@@ -164,6 +165,22 @@ impl<T: GodotClass + Inherits<Object>> Deref for TypedErasedGd<T> {
     fn deref(&self) -> &Self::Target {
         &self.instance
     }
+}
+
+impl<T: GodotClass + Inherits<Object>> From<Gd<T>> for TypedErasedGd<T> {
+    fn from(value: Gd<T>) -> Self {
+        Self::new(value)
+    }
+}
+
+impl<T: GodotClass + Inherits<Object>> FromGodot for TypedErasedGd<T> {
+    fn try_from_godot(via: Self::Via) -> Result<Self, godot::prelude::ConvertError> {
+        Ok(Self::new(via))
+    }
+}
+
+impl<T: GodotClass + Inherits<Object>> GodotConvert for TypedErasedGd<T> {
+    type Via = Gd<T>;
 }
 
 #[derive(Debug, Component)]

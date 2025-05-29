@@ -2,7 +2,7 @@ use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::{ToTokens, quote};
 use syn::{
-    Field, FieldsUnnamed, Ident, ItemFn, Token, Type,
+    Field, FieldsUnnamed, Ident, ItemFn, ItemType, Token, Type,
     parse::Parse,
     parse_macro_input,
     punctuated::{Pair, Punctuated},
@@ -126,7 +126,7 @@ pub fn signal_event_instanced(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as ArgsInstance);
     let name = input.name;
     let instance = input.instance;
-    let fields = input.fields;
+    let fields: Vec<Field> = input.fields.into_iter().map(f).collect();
     let types_raw = fields
         .iter()
         .map::<TokenStream2, _>(|field| {
@@ -140,6 +140,23 @@ pub fn signal_event_instanced(input: TokenStream) -> TokenStream {
         .enumerate()
         .map(|(i, field)| {
             let name = field.clone().ident;
+            if field
+                .clone()
+                .ty
+                .into_token_stream()
+                .to_string()
+                .starts_with("Gd")
+            {
+                return quote!(#name: bevy_godot4::prelude::TypedErasedGd::new(params.1.#i));
+            } else if field
+                .clone()
+                .ty
+                .into_token_stream()
+                .to_string()
+                .starts_with("DynGd")
+            {
+                return quote!(#name: bevy_godot4::prelude::DynErasedGd::new(params.1.#i));
+            }
             quote!(#name: params.1.#i)
         })
         .collect::<TokenStream2>();
