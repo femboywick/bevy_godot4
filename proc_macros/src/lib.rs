@@ -2,9 +2,10 @@ use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::{ToTokens, quote};
 use syn::{
-    Field, FieldsUnnamed, Ident, ItemFn, ItemType, Token, Type,
-    parse::Parse,
-    parse_macro_input,
+    Field, FieldsNamed, FieldsUnnamed, Ident, ItemFn, ItemType, Token, Type,
+    ext::IdentExt,
+    parse::{Parse, ParseBuffer, Parser},
+    parse_macro_input, parse_quote, parse_str,
     punctuated::{Pair, Punctuated},
     spanned::Spanned,
     token::Comma,
@@ -126,7 +127,33 @@ pub fn signal_event_instanced(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as ArgsInstance);
     let name = input.name;
     let instance = input.instance;
-    let fields: Vec<Field> = input.fields.into_iter().map(f).collect();
+    let fields: Vec<Field> = input
+        .fields
+        .into_iter()
+        .map(|field| {
+            let mut token_tree = field.ty.to_token_stream().into_iter();
+            let Some(token_tree1) = token_tree.nth(0) else {
+                return field;
+            };
+            let Some(ty) = token_tree.nth(1) else {
+                return field;
+            };
+            let name = field.ident.clone();
+            if token_tree1.to_string() == "Gd" {
+                let ident = Ident::parse_any
+                    .parse2(quote!(bevy_godot4::prelude::TypedErasedGd<#ty>))
+                    .unwrap();
+                return Field::parse_named.parse2(quote!(#name: #ident)).unwrap();
+            } else if token_tree1.to_string() == "DynGd" {
+                let ident = Ident::parse_any
+                    .parse2(quote!(bevy_godot4::prelude::DynErasedGd<#ty>))
+                    .unwrap();
+                return Field::parse_named.parse2(quote!(#name: #ident)).unwrap();
+            } else {
+                return field;
+            }
+        })
+        .collect();
     let types_raw = fields
         .iter()
         .map::<TokenStream2, _>(|field| {
@@ -161,11 +188,16 @@ pub fn signal_event_instanced(input: TokenStream) -> TokenStream {
         })
         .collect::<TokenStream2>();
 
+    let fields_token = fields
+        .iter()
+        .map(|field| quote!(#field,))
+        .collect::<TokenStream2>();
+
     let x = quote! {
         #[derive(bevy::prelude::Event)]
         pub struct #name {
             instance: bevy_godot4::prelude::TypedErasedGd<#instance>,
-            #fields
+            #fields_token
         }
 
         impl std::convert::From<(Gd<#instance>, #types)> for #name {
